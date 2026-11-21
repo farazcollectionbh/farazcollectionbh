@@ -12,7 +12,7 @@
 <script>
 (function () {
   if (!/[?&]v=/.test(window.location.search)) {
-    window.location.replace(window.location.pathname + '?v=20261121-1');
+    window.location.replace(window.location.pathname + '?v=20261121-2');
   }
 })();
 </script>
@@ -92,7 +92,7 @@
 <section class="section" id="contact"><div class="container"><div class="contact"><div><div class="eyebrow">Ready to order?</div><h2>Let’s get your next accessory sorted.</h2></div><a class="btn primary" href="https://wa.me/97333929180" target="_blank" rel="noopener">WhatsApp FARAZ COLLECTION ↗</a></div></div></section>
 </main>
 <footer class="footer"><div class="container footer-inner"><span>© 2026 FARAZ COLLECTION. All rights reserved.</span><span>Premium accessories • Bahrain</span></div></footer>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
 <script>
 (async function loadNewArrivals(){
   const products = [
@@ -108,9 +108,31 @@
     ["Smartbarry-KC02-Print-Camera.webp","Smartbarry KC02 Print Camera","Cameras","Instant print camera for photos and fun."]
   ];
   const grid = document.querySelector('#products .grid');
-  if (!grid || !window.JSZip) return;
+  if (!grid) return;
+  async function ensureJSZip() {
+    if (window.JSZip) return;
+    const sources = [
+      'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
+      'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
+      'https://unpkg.com/jszip@3.10.1/dist/jszip.min.js'
+    ];
+    for (const src of sources) {
+      try {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = src;
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+        if (window.JSZip) return;
+      } catch (_) {}
+    }
+    throw new Error('Image loader could not be started');
+  }
   try {
-    const response = await fetch('./Faraz_Collection_BH_10_New_Product_Photos.zip?v=20261121-1');
+    await ensureJSZip();
+    const response = await fetch('./Faraz_Collection_BH_10_New_Product_Photos.zip?v=20261121-2', {cache:'no-store'});
     if (!response.ok) throw new Error('Photo archive could not be loaded');
     const zip = await JSZip.loadAsync(await response.arrayBuffer());
     let added = 0;
@@ -135,8 +157,11 @@
     const heading = document.querySelector('#products .section-head p');
     if (heading && added) heading.textContent = '10 new arrivals added — browse the latest products and order directly through WhatsApp. Contact us for prices and availability.';
     if (added !== 10) console.warn('New arrivals loaded:', added, 'of 10');
+    if (added === 10) console.info('All 10 new product photos loaded successfully.');
   } catch (error) {
     console.error('Could not load new arrivals:', error);
+    const heading = document.querySelector('#products .section-head p');
+    if (heading) heading.textContent = 'New arrivals are being refreshed. Please reload the page shortly.';
   }
 })();
 </script>
