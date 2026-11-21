@@ -151,14 +151,15 @@
       }
       throw new Error('This browser cannot unpack the photo archive (' + entry.method + ').');
     };
-    let added = 0;    let added = 0;
+    let added = 0;
     for (const [filename,name,category,description] of products) {
       const blob = await getEntryBlob(filename);
       if (!blob) { console.error('Photo missing in archive:', filename); continue; }
       const imageUrl = URL.createObjectURL(blob);
       const card = document.createElement('article');
       card.className = 'product-card';
-      card.dataset.category = 'New Arrivals';
+      card.dataset.category = category;
+      card.dataset.newArrival = 'true';
       const message = encodeURIComponent('Hello FARAZ COLLECTION, I am interested in ' + name + '. Please share the price and availability.');
       card.innerHTML = '<div class="product-image"><img loading="lazy" alt=""></div><div class="product-info"><span class="tag">NEW ARRIVAL • ' + category + '</span><h3></h3><p></p><a class="order" target="_blank" rel="noopener">Order on WhatsApp <span>↗</span></a></div>';
       const img = card.querySelector('img');
@@ -186,7 +187,7 @@ const cardsNow=()=>document.querySelectorAll('.product-card');
 filters.forEach(btn=>btn.addEventListener('click',()=>{
  filters.forEach(x=>x.classList.remove('active'));btn.classList.add('active');
  const f=btn.dataset.filter;
- cardsNow().forEach(card=>card.style.display=(f==='All'||card.dataset.category===f)?'':'none');
+ cardsNow().forEach(card=>card.style.display=(f==='All'||card.dataset.category===f||(f==='New Arrivals'&&card.dataset.newArrival==='true'))?'':'none');
 }));
 </script>
 </body>
