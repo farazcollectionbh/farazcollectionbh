@@ -12,7 +12,7 @@
 <script>
 (function () {
   if (!/[?&]v=/.test(window.location.search)) {
-    window.location.replace(window.location.pathname + '?v=20261121-3');
+    window.location.replace(window.location.pathname + '?v=20261121-4');
   }
 })();
 </script>
@@ -145,7 +145,7 @@
     return null;
   }
   try {
-    const response = await fetch('./Faraz_Collection_BH_10_New_Product_Photos.zip?v=20261121-3', {cache:'no-store'});
+    const response = await fetch('./Faraz_Collection_BH_10_New_Product_Photos.zip?v=20261121-4', {cache:'no-store'});
     if (!response.ok) throw new Error('Photo archive could not be loaded');
     const archiveBuffer = await response.arrayBuffer();
     let added = 0;
