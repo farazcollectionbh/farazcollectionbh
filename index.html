@@ -12,7 +12,7 @@
 <script>
 (function () {
   if (!/[?&]v=/.test(window.location.search)) {
-    window.location.replace(window.location.pathname + '?v=20261121-2');
+    window.location.replace(window.location.pathname + '?v=20261121-3');
   }
 })();
 </script>
@@ -109,32 +109,45 @@
   ];
   const grid = document.querySelector('#products .grid');
   if (!grid) return;
-  async function ensureJSZip() {
-    if (window.JSZip) return;
-    const sources = [
-      'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
-      'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
-      'https://unpkg.com/jszip@3.10.1/dist/jszip.min.js'
-    ];
-    for (const src of sources) {
-      try {
-        await new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = src;
-          script.onload = resolve;
-          script.onerror = reject;
-          document.head.appendChild(script);
-        });
-        if (window.JSZip) return;
-      } catch (_) {}
+  async function unzipEntry(buffer, filename) {
+    const view = new DataView(buffer);
+    let eocd = -1;
+    for (let p = view.byteLength - 22; p >= Math.max(0, view.byteLength - 65558); p--) {
+      if (view.getUint32(p, true) === 0x06054b50) { eocd = p; break; }
     }
-    throw new Error('Image loader could not be started');
+    if (eocd < 0) throw new Error('Invalid photo archive');
+    const count = view.getUint16(eocd + 10, true);
+    let offset = view.getUint32(eocd + 16, true);
+    const decoder = new TextDecoder();
+    for (let i = 0; i < count; i++) {
+      if (view.getUint32(offset, true) !== 0x02014b50) break;
+      const method = view.getUint16(offset + 10, true);
+      const compressedSize = view.getUint32(offset + 20, true);
+      const nameLength = view.getUint16(offset + 28, true);
+      const extraLength = view.getUint16(offset + 30, true);
+      const commentLength = view.getUint16(offset + 32, true);
+      const localOffset = view.getUint32(offset + 42, true);
+      const name = decoder.decode(new Uint8Array(buffer, offset + 46, nameLength)).split('/').pop();
+      if (name === filename) {
+        const localNameLength = view.getUint16(localOffset + 26, true);
+        const localExtraLength = view.getUint16(localOffset + 28, true);
+        const dataStart = localOffset + 30 + localNameLength + localExtraLength;
+        const compressed = new Uint8Array(buffer, dataStart, compressedSize);
+        if (method === 0) return new Blob([compressed]);
+        if (method === 8 && typeof DecompressionStream !== 'undefined') {
+          const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+          return await new Response(stream).blob();
+        }
+        throw new Error('Unsupported archive compression');
+      }
+      offset += 46 + nameLength + extraLength + commentLength;
+    }
+    return null;
   }
   try {
-    await ensureJSZip();
-    const response = await fetch('./Faraz_Collection_BH_10_New_Product_Photos.zip?v=20261121-2', {cache:'no-store'});
+    const response = await fetch('./Faraz_Collection_BH_10_New_Product_Photos.zip?v=20261121-3', {cache:'no-store'});
     if (!response.ok) throw new Error('Photo archive could not be loaded');
-    const zip = await JSZip.loadAsync(await response.arrayBuffer());
+    const archiveBuffer = await response.arrayBuffer();
     let added = 0;
     for (const [filename,name,category,description] of products) {
       const entry = Object.values(zip.files).find(file => !file.dir && file.name.split('/').pop() === filename);
@@ -167,7 +180,7 @@
 </script>
 <script>
 const filters=document.querySelectorAll('.filter');
-const cards=document.querySelectorAll('.product-card');
+const cardsNow=()=>document.querySelectorAll('.product-card');
 filters.forEach(btn=>btn.addEventListener('click',()=>{
  filters.forEach(x=>x.classList.remove('active'));btn.classList.add('active');
  const f=btn.dataset.filter;
