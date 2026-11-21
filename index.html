@@ -150,9 +150,8 @@
     const archiveBuffer = await response.arrayBuffer();
     let added = 0;
     for (const [filename,name,category,description] of products) {
-      const entry = Object.values(zip.files).find(file => !file.dir && file.name.split('/').pop() === filename);
-      if (!entry) continue;
-      const blob = await entry.async('blob');
+      const blob = await unzipEntry(archiveBuffer, filename);
+      if (!blob) { console.warn('Photo missing from archive:', filename); continue; }
       const imageUrl = URL.createObjectURL(blob);
       const card = document.createElement('article');
       card.className = 'product-card';
@@ -184,7 +183,7 @@ const cardsNow=()=>document.querySelectorAll('.product-card');
 filters.forEach(btn=>btn.addEventListener('click',()=>{
  filters.forEach(x=>x.classList.remove('active'));btn.classList.add('active');
  const f=btn.dataset.filter;
- cards.forEach(card=>card.style.display=(f==='All'||card.dataset.category===f)?'':'none');
+ cardsNow().forEach(card=>card.style.display=(f==='All'||card.dataset.category===f)?'':'none');
 }));
 </script>
 </body>
