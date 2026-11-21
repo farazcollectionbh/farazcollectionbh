@@ -12,7 +12,7 @@
 <script>
 (function () {
   if (!/[?&]v=/.test(window.location.search)) {
-    window.location.replace(window.location.pathname + '?v=20261013-2');
+    window.location.replace(window.location.pathname + '?v=20261121-1');
   }
 })();
 </script>
@@ -92,6 +92,54 @@
 <section class="section" id="contact"><div class="container"><div class="contact"><div><div class="eyebrow">Ready to order?</div><h2>Let’s get your next accessory sorted.</h2></div><a class="btn primary" href="https://wa.me/97333929180" target="_blank" rel="noopener">WhatsApp FARAZ COLLECTION ↗</a></div></div></section>
 </main>
 <footer class="footer"><div class="container footer-inner"><span>© 2026 FARAZ COLLECTION. All rights reserved.</span><span>Premium accessories • Bahrain</span></div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(async function loadNewArrivals(){
+  const products = [
+    ["ORdEO-OR-BL28-Wireless-Earbuds.webp","ORdEO OR-BL28 Wireless Earbuds","Audio","Wireless earbuds for everyday listening."],
+    ["Telzeal-TC44-5G-Smart-Watch.webp","Telzeal TC44 5G Smart Watch","Smart Watches","Smart watch with 5G-style model branding; contact us for confirmed specifications."],
+    ["HONTON-Solar-PTZ-Camera.webp","HONTON Solar PTZ Camera","Home & Utility","Solar-powered PTZ security camera; ask us for available features."],
+    ["Smartbarry-HT10-Projector.webp","Smartbarry HT10 Projector","Projectors","Compact projector for home entertainment."],
+    ["PLOKAMA-PK8930-Tripod.webp","PLOKAMA PK8930 Tripod","Home & Utility","Tripod stand for phones and compatible devices."],
+    ["Earldom-EH355-Bicycle-Phone-Holder.webp","Earldom EH355 Bicycle Phone Holder","Home & Utility","Bicycle phone holder for convenient riding navigation."],
+    ["KW30-MAX-Smart-Watch.webp","KW30 MAX Smart Watch","Smart Watches","Smart watch for everyday use."],
+    ["KW93-MAX-Smart-Watch.webp","KW93 MAX Smart Watch","Smart Watches","Smart watch with a modern wearable design."],
+    ["H88-4K-Sports-Camera.webp","H88 4K Sports Camera","Cameras","Compact sports camera; contact us for specifications."],
+    ["Smartbarry-KC02-Print-Camera.webp","Smartbarry KC02 Print Camera","Cameras","Instant print camera for photos and fun."]
+  ];
+  const grid = document.querySelector('#products .grid');
+  if (!grid || !window.JSZip) return;
+  try {
+    const response = await fetch('./Faraz_Collection_BH_10_New_Product_Photos.zip?v=20261121-1');
+    if (!response.ok) throw new Error('Photo archive could not be loaded');
+    const zip = await JSZip.loadAsync(await response.arrayBuffer());
+    let added = 0;
+    for (const [filename,name,category,description] of products) {
+      const entry = Object.values(zip.files).find(file => !file.dir && file.name.split('/').pop() === filename);
+      if (!entry) continue;
+      const blob = await entry.async('blob');
+      const imageUrl = URL.createObjectURL(blob);
+      const card = document.createElement('article');
+      card.className = 'product-card';
+      card.dataset.category = 'New Arrivals';
+      const message = encodeURIComponent('Hello FARAZ COLLECTION, I am interested in ' + name + '. Please share the price and availability.');
+      card.innerHTML = '<div class="product-image"><img loading="lazy" alt=""></div><div class="product-info"><span class="tag">NEW ARRIVAL • ' + category + '</span><h3></h3><p></p><a class="order" target="_blank" rel="noopener">Order on WhatsApp <span>↗</span></a></div>';
+      card.querySelector('img').src = imageUrl;
+      card.querySelector('img').alt = name;
+      card.querySelector('h3').textContent = name;
+      card.querySelector('p').textContent = description;
+      card.querySelector('a').href = 'https://wa.me/97333929180?text=' + message;
+      grid.insertBefore(card, grid.firstChild);
+      added++;
+    }
+    const heading = document.querySelector('#products .section-head p');
+    if (heading && added) heading.textContent = '10 new arrivals added — browse the latest products and order directly through WhatsApp. Contact us for prices and availability.';
+    if (added !== 10) console.warn('New arrivals loaded:', added, 'of 10');
+  } catch (error) {
+    console.error('Could not load new arrivals:', error);
+  }
+})();
+</script>
 <script>
 const filters=document.querySelectorAll('.filter');
 const cards=document.querySelectorAll('.product-card');
