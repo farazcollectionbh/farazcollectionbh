@@ -12,7 +12,7 @@
 <script>
 (function () {
   if (!/[?&]v=/.test(window.location.search)) {
-    window.location.replace(window.location.pathname + '?v=20261121-4');
+    window.location.replace(window.location.pathname + '?v=20261121-5');
   }
 })();
 </script>
@@ -97,69 +97,44 @@
 (async function loadNewArrivals(){
   const products = [
     ["ORdEO-OR-BL28-Wireless-Earbuds.webp","ORdEO OR-BL28 Wireless Earbuds","Audio","Wireless earbuds for everyday listening."],
-    ["Telzeal-TC44-5G-Smart-Watch.webp","Telzeal TC44 5G Smart Watch","Smart Watches","Smart watch with 5G-style model branding; contact us for confirmed specifications."],
-    ["HONTON-Solar-PTZ-Camera.webp","HONTON Solar PTZ Camera","Home & Utility","Solar-powered PTZ security camera; ask us for available features."],
+    ["Telzeal-TC44-5G-Smart-Watch.webp","Telzeal TC44 5G Smart Watch","Smart Watches","Smart watch; contact us for confirmed specifications."],
+    ["HONTON-Solar-PTZ-Camera.webp","HONTON Solar PTZ Camera","Home & Utility","Solar-powered PTZ security camera."],
     ["Smartbarry-HT10-Projector.webp","Smartbarry HT10 Projector","Projectors","Compact projector for home entertainment."],
     ["PLOKAMA-PK8930-Tripod.webp","PLOKAMA PK8930 Tripod","Home & Utility","Tripod stand for phones and compatible devices."],
     ["Earldom-EH355-Bicycle-Phone-Holder.webp","Earldom EH355 Bicycle Phone Holder","Home & Utility","Bicycle phone holder for convenient riding navigation."],
     ["KW30-MAX-Smart-Watch.webp","KW30 MAX Smart Watch","Smart Watches","Smart watch for everyday use."],
     ["KW93-MAX-Smart-Watch.webp","KW93 MAX Smart Watch","Smart Watches","Smart watch with a modern wearable design."],
-    ["H88-4K-Sports-Camera.webp","H88 4K Sports Camera","Cameras","Compact sports camera; contact us for specifications."],
+    ["H88-4K-Sports-Camera.webp","H88 4K Sports Camera","Cameras","Compact sports camera."],
     ["Smartbarry-KC02-Print-Camera.webp","Smartbarry KC02 Print Camera","Cameras","Instant print camera for photos and fun."]
   ];
   const grid = document.querySelector('#products .grid');
   if (!grid) return;
-  async function unzipEntry(buffer, filename) {
-    const view = new DataView(buffer);
-    let eocd = -1;
-    for (let p = view.byteLength - 22; p >= Math.max(0, view.byteLength - 65558); p--) {
-      if (view.getUint32(p, true) === 0x06054b50) { eocd = p; break; }
-    }
-    if (eocd < 0) throw new Error('Invalid photo archive');
-    const count = view.getUint16(eocd + 10, true);
-    let offset = view.getUint32(eocd + 16, true);
-    const decoder = new TextDecoder();
-    for (let i = 0; i < count; i++) {
-      if (view.getUint32(offset, true) !== 0x02014b50) break;
-      const method = view.getUint16(offset + 10, true);
-      const compressedSize = view.getUint32(offset + 20, true);
-      const nameLength = view.getUint16(offset + 28, true);
-      const extraLength = view.getUint16(offset + 30, true);
-      const commentLength = view.getUint16(offset + 32, true);
-      const localOffset = view.getUint32(offset + 42, true);
-      const name = decoder.decode(new Uint8Array(buffer, offset + 46, nameLength)).split('/').pop();
-      if (name === filename) {
-        const localNameLength = view.getUint16(localOffset + 26, true);
-        const localExtraLength = view.getUint16(localOffset + 28, true);
-        const dataStart = localOffset + 30 + localNameLength + localExtraLength;
-        const compressed = new Uint8Array(buffer, dataStart, compressedSize);
-        if (method === 0) return new Blob([compressed]);
-        if (method === 8 && typeof DecompressionStream !== 'undefined') {
-          const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
-          return await new Response(stream).blob();
-        }
-        throw new Error('Unsupported archive compression');
-      }
-      offset += 46 + nameLength + extraLength + commentLength;
-    }
-    return null;
-  }
   try {
-    const response = await fetch('./Faraz_Collection_BH_10_New_Product_Photos.zip?v=20261121-4', {cache:'no-store'});
-    if (!response.ok) throw new Error('Photo archive could not be loaded');
-    const archiveBuffer = await response.arrayBuffer();
+    if (!window.JSZip) {
+      await new Promise((resolve,reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('Could not load ZIP reader'));
+        document.head.appendChild(script);
+      });
+    }
+    const response = await fetch('./Faraz_Collection_BH_10_New_Product_Photos.zip?v=20261121-5', {cache:'no-store'});
+    if (!response.ok) throw new Error('Photo archive request failed: ' + response.status);
+    const archive = await JSZip.loadAsync(await response.arrayBuffer());
     let added = 0;
     for (const [filename,name,category,description] of products) {
-      const blob = await unzipEntry(archiveBuffer, filename);
-      if (!blob) { console.warn('Photo missing from archive:', filename); continue; }
+      const entry = Object.values(archive.files).find(file => !file.dir && file.name.split('/').pop() === filename);
+      if (!entry) { console.error('Photo missing in archive:', filename); continue; }
+      const blob = await entry.async('blob');
       const imageUrl = URL.createObjectURL(blob);
       const card = document.createElement('article');
       card.className = 'product-card';
       card.dataset.category = 'New Arrivals';
       const message = encodeURIComponent('Hello FARAZ COLLECTION, I am interested in ' + name + '. Please share the price and availability.');
       card.innerHTML = '<div class="product-image"><img loading="lazy" alt=""></div><div class="product-info"><span class="tag">NEW ARRIVAL • ' + category + '</span><h3></h3><p></p><a class="order" target="_blank" rel="noopener">Order on WhatsApp <span>↗</span></a></div>';
-      card.querySelector('img').src = imageUrl;
-      card.querySelector('img').alt = name;
+      const img = card.querySelector('img');
+      img.src = imageUrl; img.alt = name;
       card.querySelector('h3').textContent = name;
       card.querySelector('p').textContent = description;
       card.querySelector('a').href = 'https://wa.me/97333929180?text=' + message;
@@ -167,13 +142,13 @@
       added++;
     }
     const heading = document.querySelector('#products .section-head p');
-    if (heading && added) heading.textContent = '10 new arrivals added — browse the latest products and order directly through WhatsApp. Contact us for prices and availability.';
-    if (added !== 10) console.warn('New arrivals loaded:', added, 'of 10');
-    if (added === 10) console.info('All 10 new product photos loaded successfully.');
+    if (heading && added === 10) heading.textContent = '10 new arrivals added — browse the latest products and order directly through WhatsApp. Contact us for prices and availability.';
+    if (added !== 10) throw new Error('Only ' + added + ' of 10 product photos were found.');
+    console.info('All 10 new product photos loaded successfully.');
   } catch (error) {
     console.error('Could not load new arrivals:', error);
     const heading = document.querySelector('#products .section-head p');
-    if (heading) heading.textContent = 'New arrivals are being refreshed. Please reload the page shortly.';
+    if (heading) heading.textContent = 'New arrivals could not load: ' + error.message;
   }
 })();
 </script>
